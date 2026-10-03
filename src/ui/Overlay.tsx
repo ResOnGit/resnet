@@ -21,24 +21,26 @@ export function Overlay() {
       <aside className="narrative" data-mode={telling ? "story" : level ? "level" : "home"}>
         <div className="narrative-home">
           <p className="narrative-hello" data-intro="line1">
-            HELLO THERE.
+            Good Day.
           </p>
           <p className="narrative-prompt" data-intro="line2">
             Anything you would like to know?
           </p>
-          <p className="narrative-hint">SCROLL TO DESCEND</p>
+          <p className="narrative-hint">SCROLL DOWN TO SEE MORE.</p>
+          <p className="narrative-hint">CLICK ON ANY SCREENS THAT MIGHT INTEREST YOU,</p>
+          <p className="narrative-hint">OR START FROM THE VERY TOP.</p>
         </div>
         {level && !telling && (
           <div className="narrative-level" key={`glance-${focus}`}>
             <p className="narrative-index">SECTION {level.number}</p>
             <p className="narrative-title">{level.title}</p>
-            <p className="narrative-copy">{level.slides[0]?.line}</p>
+            <p className="narrative-copy">{level.slides[0]}</p>
           </div>
         )}
         {telling && (
           <div className="narrative-story" key={`story-${story}`}>
             <p className="narrative-index">SECTION {level.number}</p>
-            <StoryReel lines={level.slides.map((item) => item.line)} slide={slide} />
+            <StoryReel lines={level.slides} slide={slide} />
           </div>
         )}
       </aside>
@@ -51,7 +53,7 @@ function StoryReel({ lines, slide }: { lines: string[]; slide: number }) {
     <div className="story-window">
       <ol className="story-slides" style={{ "--slide": slide } as CSSProperties}>
         {lines.map((line, index) => (
-          <li key={line} data-current={index === slide ? "true" : "false"}>
+          <li key={`${index}-${line}`} data-current={index === slide ? "true" : "false"}>
             <p className="story-line">{line}</p>
           </li>
         ))}

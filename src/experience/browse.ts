@@ -72,6 +72,7 @@ function scrollCeiling() {
 
 export function inspectLevel(index: number) {
   if (browse.story >= 0 || index < 0 || index >= LEVEL_COUNT) return;
+  if (browse.inspect >= 0 && browse.inspect !== index) return;
   browse.inspect = index;
   browse.hold = index;
   if (browse.focus !== index) {

@@ -84,7 +84,7 @@ canvas {
 
 .narrative {
   position: absolute;
-  right: 7vw;
+  left: 58%;
   top: 46%;
   max-width: 18rem;
   text-align: left;
@@ -179,7 +179,7 @@ canvas {
 
 .narrative[data-mode="story"] {
   right: auto;
-  left: 56%;
+  left: 58%;
   top: 0;
   bottom: 0;
 }

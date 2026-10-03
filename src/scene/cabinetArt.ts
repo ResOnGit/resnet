@@ -1,4 +1,4 @@
-import { sectionNumber } from "../content/levels";
+import { cabinetMark, sectionNumber } from "../content/levels";
 
 const STENCIL = '"Big Shoulders Stencil", Impact, sans-serif';
 
@@ -25,7 +25,7 @@ function screws(ctx: CanvasRenderingContext2D, w: number, h: number) {
 }
 
 export function sectionMark(section: number) {
-  return sectionNumber(section);
+  return cabinetMark(section);
 }
 
 export function drawCabinetSide(canvas: HTMLCanvasElement, section: number) {
@@ -38,15 +38,15 @@ export function drawCabinetSide(canvas: HTMLCanvasElement, section: number) {
   ctx.fillStyle = "#2c2c2c";
   ctx.fillRect(w - 54, 90, 16, h - 180);
 
-  const mark = sectionMark(section);
-  if (!mark) return;
+  const number = sectionNumber(section);
+  if (!number) return;
   ctx.fillStyle = "#e8e8e8";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
   ctx.font = `700 54px ${STENCIL}`;
   ctx.fillText("SECTION", 40, 36);
-  ctx.font = `800 148px ${STENCIL}`;
-  ctx.fillText(mark, 40, 96);
+  fitMark(ctx, number, 800, 148, w - 110);
+  ctx.fillText(number, 40, 96);
 }
 
 export function drawCabinetBack(canvas: HTMLCanvasElement, section: number) {
@@ -68,6 +68,20 @@ export function drawCabinetBack(canvas: HTMLCanvasElement, section: number) {
   ctx.fillStyle = "#e4e4e4";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = `800 140px ${STENCIL}`;
+  fitMark(ctx, mark, 800, 140, w - 160);
   ctx.fillText(mark, w / 2, h / 2 + 8);
+}
+
+function fitMark(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  weight: number,
+  size: number,
+  maxWidth: number,
+) {
+  let current = size;
+  do {
+    ctx.font = `${weight} ${current}px ${STENCIL}`;
+    current -= 4;
+  } while (ctx.measureText(text).width > maxWidth && current > 28);
 }
