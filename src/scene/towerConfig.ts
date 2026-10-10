@@ -56,18 +56,20 @@ export const CAMERA_START = {
 };
 
 export function cameraEnd(narrow: boolean) {
+  const lookY = HOME_LOOK_Y - 1.5;
+
   if (narrow) {
     return {
       camX: 2,
-      camY: HOME_LOOK_Y + 3,
-      camZ: 42,
+      camY: lookY + 2.5,
+      camZ: 38,
       lookX: 2,
-      lookY: HOME_LOOK_Y,
+      lookY,
       lookZ: 0,
       upX: 0,
       upY: 1,
       upZ: 0,
-      fov: 36,
+      fov: 33,
       fogNear: 24,
       fogFar: 90,
     };
@@ -75,16 +77,16 @@ export function cameraEnd(narrow: boolean) {
 
   return {
     camX: 24,
-    camY: HOME_LOOK_Y + 3,
-    camZ: 62,
+    camY: lookY + 2.5,
+    camZ: 55,
     lookX: 16,
-    lookY: HOME_LOOK_Y,
+    lookY,
     lookZ: 0,
     upX: 0,
     upY: 1,
     upZ: 0,
-    fov: 32,
-    fogNear: 30,
-    fogFar: 120,
+    fov: 30,
+    fogNear: 28,
+    fogFar: 115,
   };
 }

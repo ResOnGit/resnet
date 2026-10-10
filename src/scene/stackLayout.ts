@@ -1,14 +1,18 @@
 import { CUBE, TOWER, sectionBaseY } from "./towerConfig";
 
-const STEP = (72 * Math.PI) / 180;
-const GROUP = (36 * Math.PI) / 180;
+/**
+ * Six piers, six gaps, 60° apart. A cube's front/back are 180° apart, so both
+ * can sit in gaps at once. Sides are 90° off — 90 mod 60 = 30 — so they land
+ * on piers whenever front/back land on gaps. Hover/click still override yaw.
+ */
+const STEP = Math.PI / 3;
 
 /** One shared shift, so the column sits off the drum's center. */
 const SHIFT_X = 0.42;
 const SHIFT_Z = 0.62;
 
 export function cubePose(section: number) {
-  const yaw = (section % 5) * STEP + Math.floor(section / 5) * GROUP;
+  const yaw = section * STEP;
   return {
     x: SHIFT_X,
     y: TOWER.sectionGap * 0.5,

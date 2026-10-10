@@ -38,14 +38,14 @@ export function attachVhs(material: THREE.MeshBasicMaterial) {
   material.customProgramCacheKey = () => "vhs-static";
 }
 
-/** Fast full-snow hit. Peaks almost immediately, gone in about a sixth of a second. */
+/** Full-snow hit on story open / slide cut. */
 export function staticMix(ageMs: number) {
-  const span = 170;
+  const span = 300;
   if (ageMs < 0 || ageMs > span) return 0;
   const t = ageMs / span;
-  if (t < 0.08) return t / 0.08;
-  if (t < 0.55) return 1;
-  return (1 - t) / 0.45;
+  if (t < 0.1) return t / 0.1;
+  if (t < 0.5) return 1;
+  return (1 - t) / 0.5;
 }
 
 export function tickVhs(material: THREE.MeshBasicMaterial, time: number, snow = 0) {

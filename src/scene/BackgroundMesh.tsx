@@ -42,7 +42,7 @@ export function BackgroundMesh() {
         fragmentShader: `
           varying float vFade;
           void main() {
-            gl_FragColor = vec4(0.165, 0.176, 0.196, vFade * 0.28);
+            gl_FragColor = vec4(0.22, 0.21, 0.24, vFade * 0.3);
           }
         `,
       }),
@@ -71,6 +71,8 @@ export function BackgroundMesh() {
 
     current.position.x = camera.position.x * 0.03;
     current.position.y = camera.position.y * 0.035;
+    current.rotation.x = Math.sin(time * 0.09) * 0.055;
+    current.rotation.y = Math.cos(time * 0.08) * 0.045;
     current.updateMatrixWorld();
 
     const rest = geometry.userData.rest as Float32Array;
@@ -152,11 +154,15 @@ export function BackgroundMesh() {
       velocity[i3 + 1] = vy;
       velocity[i3 + 2] = vz;
 
-      const breathe =
-        Math.sin(time * 0.13 + rx * 0.045 + ry * 0.03) * 0.045;
-      array[i3] = rx + ox;
-      array[i3 + 1] = ry + oy;
-      array[i3 + 2] = rest[i3 + 2] + oz * 0.35 + breathe;
+      const phase = time * 0.11;
+      const wave =
+        Math.sin(rx * 0.045 + ry * 0.032 + phase) * 0.72 +
+        Math.sin(rx * 0.028 - ry * 0.038 + phase * 0.85) * 0.42;
+      const swayX = Math.sin(time * 0.09 + ry * 0.04) * 0.2;
+      const swayY = Math.cos(time * 0.085 + rx * 0.04) * 0.2;
+      array[i3] = rx + ox + swayX;
+      array[i3 + 1] = ry + oy + swayY;
+      array[i3 + 2] = rest[i3 + 2] + oz * 0.35 + wave;
     }
 
     position.needsUpdate = true;
@@ -167,7 +173,7 @@ export function BackgroundMesh() {
       ref={mesh}
       geometry={geometry}
       material={material}
-      position={[0, -8, -36]}
+      position={[0, -6, -32]}
       raycast={() => null}
       frustumCulled={false}
     />

@@ -1,8 +1,7 @@
 import { frameOf, imageUrl, LEVEL_COUNT, levelAt } from "../content/levels";
 import { advanceGif, gifStatus, gifView, isGif, warmGif } from "./gif";
 
-const MONO = '"IBM Plex Mono", ui-monospace, monospace';
-const DISPLAY = 'Syne, "Helvetica Neue", Arial, sans-serif';
+import { etchedText, fitRomanWidth } from "../ui/etchedText";
 
 type Shot = {
   img: HTMLImageElement;
@@ -50,20 +49,6 @@ export function primeScreenImages() {
       }
     }
   }
-}
-
-function fitFont(
-  ctx: CanvasRenderingContext2D,
-  text: string,
-  weight: number,
-  size: number,
-  maxWidth: number,
-) {
-  let current = size;
-  do {
-    ctx.font = `${weight} ${current}px ${DISPLAY}`;
-    current -= 2;
-  } while (ctx.measureText(text).width > maxWidth && current > 14);
 }
 
 function blankFace(ctx: CanvasRenderingContext2D, w: number, h: number) {
@@ -128,18 +113,17 @@ function paintTitle(ctx: CanvasRenderingContext2D, section: number, missing: str
   ctx.lineWidth = 2;
   ctx.strokeRect(18, 18, w - 36, h - 36);
 
-  ctx.fillStyle = "rgba(255,255,255,0.55)";
-  ctx.font = `500 17px ${MONO}`;
-  ctx.fillText(`SECTION ${item.number}`, 40, 60);
+  etchedText(ctx, `SECTION ${item.number}`, 40, 60, 20, 700, {
+    face: "rgba(210, 204, 194, 0.85)",
+  });
 
-  ctx.fillStyle = "#f2f2f2";
-  fitFont(ctx, item.title, 800, 42, w - 80);
-  ctx.fillText(item.title, 40, h / 2 + 16);
+  const titleSize = fitRomanWidth(ctx, item.title, 700, 44, w - 80);
+  etchedText(ctx, item.title, 40, h / 2 + 16, titleSize, 700, { face: "#e8e2d8" });
 
   if (missing) {
-    ctx.font = `400 15px ${MONO}`;
-    ctx.fillStyle = "rgba(255,255,255,0.45)";
-    ctx.fillText(missing, 40, h - 46);
+    etchedText(ctx, missing, 40, h - 46, 15, 600, {
+      face: "rgba(200, 194, 184, 0.55)",
+    });
   }
 
   ctx.fillStyle = "rgba(255,255,255,0.035)";

@@ -30,19 +30,22 @@ export function Overlay() {
           <p className="narrative-hint">CLICK ON ANY SCREENS THAT MIGHT INTEREST YOU,</p>
           <p className="narrative-hint">OR START FROM THE VERY TOP.</p>
         </div>
-        {level && !telling && (
-          <div className="narrative-level" key={`glance-${focus}`}>
-            <p className="narrative-index">SECTION {level.number}</p>
-            <p className="narrative-title">{level.title}</p>
-            <p className="narrative-copy">{level.slides[0]}</p>
-          </div>
-        )}
-        {telling && (
-          <div className="narrative-story" key={`story-${story}`}>
-            <p className="narrative-index">SECTION {level.number}</p>
-            <StoryReel lines={level.slides} slide={slide} />
-          </div>
-        )}
+        <div className="narrative-level" aria-hidden={!(level && !telling)}>
+          {level && !telling && (
+            <div className="narrative-stack" key={`glance-${focus}`}>
+              <p className="narrative-index">SECTION {level.number}</p>
+              <p className="story-line narrative-glance-title">{level.title}</p>
+            </div>
+          )}
+        </div>
+        <div className="narrative-story" aria-hidden={story < 0 || !level}>
+          {telling && (
+            <div className="narrative-stack" key={`story-${story}`}>
+              <p className="narrative-index">SECTION {level.number}</p>
+              <StoryReel lines={level.slides} slide={slide} />
+            </div>
+          )}
+        </div>
       </aside>
     </div>
   );
@@ -51,7 +54,10 @@ export function Overlay() {
 function StoryReel({ lines, slide }: { lines: string[]; slide: number }) {
   return (
     <div className="story-window">
-      <ol className="story-slides" style={{ "--slide": slide } as CSSProperties}>
+      <ol
+        className="story-slides"
+        style={{ "--slide": slide } as CSSProperties & { "--slide": number }}
+      >
         {lines.map((line, index) => (
           <li key={`${index}-${line}`} data-current={index === slide ? "true" : "false"}>
             <p className="story-line">{line}</p>

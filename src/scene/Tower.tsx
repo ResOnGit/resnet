@@ -21,6 +21,8 @@ import { CAMERA_START, CONCRETE, CUBE, TOP_Y, TOWER, sectionBaseY } from "./towe
 
 const SLOTS = 10;
 const RENDER_ABOVE = 22;
+/** Front pier hide — faster than camera zoom so hover spin does not read as a slow dissolve. */
+let pierHideBlend = 0;
 
 type Screen = {
   canvas: HTMLCanvasElement;
@@ -282,7 +284,7 @@ export function Tower() {
       lean.current.rotation.z = motion.lean;
       // Captions sit just right of center, so the cabinet has to park further left.
       const wide = window.innerWidth >= 780;
-      const hoverShift = wide ? 1.05 : 4.2;
+      const hoverShift = wide ? 2.15 : 4.4;
       const storyPull = wide ? 2.4 : 5;
       const shift = (hoverShift - storyPull * browse.storyBlend) * browse.zoom;
       const glide = 1 - Math.exp(-delta * 3.2);
@@ -313,7 +315,11 @@ export function Tower() {
         middlePier = i;
       }
     }
-    materials.frontPier.opacity = visible * (1 - browse.zoom);
+    const pierHideTarget = browse.inspect >= 0 ? 1 : 0;
+    const pierHideRate = pierHideTarget > pierHideBlend ? 52 : 28;
+    pierHideBlend +=
+      (pierHideTarget - pierHideBlend) * (1 - Math.exp(-delta * pierHideRate));
+    materials.frontPier.opacity = visible * (1 - pierHideBlend);
     materials.frontPier.depthWrite = materials.frontPier.opacity > 0.02;
 
     const lookY = motion.lookY - browse.scroll;

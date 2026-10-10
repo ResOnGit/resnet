@@ -2,6 +2,7 @@ import { Canvas } from "@react-three/fiber";
 import * as THREE from "three";
 import { closeStory, getBrowseSnapshot } from "../experience/browse";
 import { CAMERA_START } from "./towerConfig";
+import { BackgroundEnvironment } from "./BackgroundEnvironment";
 import { BackgroundMesh } from "./BackgroundMesh";
 import { CameraRig } from "./CameraRig";
 import { Lights } from "./Lights";
@@ -37,6 +38,7 @@ export function Scene() {
         camera.lookAt(CAMERA_START.lookX, CAMERA_START.lookY, CAMERA_START.lookZ);
       }}
     >
+      <BackgroundEnvironment />
       <BackgroundMesh />
       <Lights />
       <CameraRig />
