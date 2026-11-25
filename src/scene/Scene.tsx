@@ -5,6 +5,7 @@ import { CAMERA_START } from "./towerConfig";
 import { BackgroundEnvironment } from "./BackgroundEnvironment";
 import { BackgroundMesh } from "./BackgroundMesh";
 import { CameraRig } from "./CameraRig";
+import { FrameRig } from "./FrameRig";
 import { Lights } from "./Lights";
 import { Tower } from "./Tower";
 
@@ -43,6 +44,8 @@ export function Scene() {
       <Lights />
       <CameraRig />
       <Tower />
+      {/* Last on purpose: it measures the frame after the camera and tower have moved. */}
+      <FrameRig />
     </Canvas>
   );
 }

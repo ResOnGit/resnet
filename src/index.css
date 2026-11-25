@@ -1,11 +1,3 @@
-@font-face {
-  font-family: "Trajanus Roman";
-  src: url("/fonts/TrajanusRoman-Bold.woff2") format("woff2");
-  font-weight: 700;
-  font-style: normal;
-  font-display: swap;
-}
-
 *,
 *::before,
 *::after {
@@ -93,11 +85,12 @@ canvas {
 
 .resnet-meta {
   margin-top: 1.6rem;
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   font-weight: 500;
   letter-spacing: 0.32em;
   padding-left: 0.32em;
-  color: rgba(243, 243, 243, 0.62);
+  font-variant-numeric: lining-nums tabular-nums;
+  color: rgba(243, 243, 243, 0.85);
   opacity: 0;
 }
 
@@ -129,11 +122,16 @@ canvas {
   opacity: 0;
 }
 
+/*
+ * Caption placement. FrameRig measures where the tower / TV lands on screen and
+ * sets --cap-left and --cap-width (px) so the captions always start just right of
+ * it. The percentages are only the fallback before the first measurement.
+ */
 .narrative-home {
   position: absolute;
-  left: 58%;
+  left: var(--cap-left, 58%);
   top: 46%;
-  max-width: 18rem;
+  max-width: var(--cap-width, 18rem);
   text-align: left;
   opacity: 0;
   transition: opacity var(--narrative-fade);
@@ -143,9 +141,9 @@ canvas {
 .narrative-level,
 .narrative-story {
   position: absolute;
-  left: 68%;
+  left: var(--cap-left, 68%);
   top: calc(53% - 12.1rem);
-  max-width: min(18rem, 28vw);
+  max-width: var(--cap-width, min(18rem, 28vw));
   text-align: left;
   opacity: 0;
   transition: opacity var(--narrative-fade);
@@ -154,6 +152,32 @@ canvas {
 
 .narrative-story {
   --slot: 6.75rem;
+}
+
+/*
+ * While a TV is framed, the tower's far piers and rings pass behind the captions.
+ * A soft dark pool and a tight shadow keep the white type readable over them.
+ */
+.narrative-level,
+.narrative-story {
+  text-shadow:
+    0 0 16px rgba(5, 6, 7, 0.95),
+    0 0 3px rgba(5, 6, 7, 0.85);
+}
+
+.narrative-level::before,
+.narrative-story::before {
+  content: "";
+  position: absolute;
+  inset: -2.5rem -2.25rem;
+  z-index: -1;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(5, 6, 7, 0.78) 0%,
+    rgba(5, 6, 7, 0.55) 48%,
+    rgba(5, 6, 7, 0) 74%
+  );
+  pointer-events: none;
 }
 
 .narrative[data-mode="home"] .narrative-home,
@@ -183,7 +207,7 @@ canvas {
 }
 
 .narrative-index {
-  font-size: 0.75rem;
+  font-size: 0.82rem;
 }
 
 .narrative-title {
@@ -202,15 +226,33 @@ canvas {
 }
 
 .narrative-hint {
-  margin-top: 2.2rem;
-  font-size: 0.72rem;
+  margin-top: 2rem;
+  font-size: 0.82rem;
+  line-height: 1.5;
   opacity: 0;
   transition: opacity var(--narrative-fade);
 }
 
+.narrative-hint ~ .narrative-hint {
+  margin-top: 1rem;
+}
+
+/* The hints wait for the headline and the question, then arrive one at a time. */
 .overlay[data-phase="settled"] .narrative-hint,
 .narrative-hint.is-visible {
   opacity: 1;
+}
+
+.overlay[data-phase="settled"] .narrative-hint:nth-of-type(3) {
+  transition-delay: 0.9s;
+}
+
+.overlay[data-phase="settled"] .narrative-hint:nth-of-type(4) {
+  transition-delay: 1.15s;
+}
+
+.overlay[data-phase="settled"] .narrative-hint:nth-of-type(5) {
+  transition-delay: 1.4s;
 }
 
 .story-window {
@@ -305,19 +347,52 @@ canvas {
   background: #ececee;
 }
 
-@media (max-width: 779px) {
-  .narrative-home,
-  .narrative-level,
-  .narrative-story {
-    left: 8vw;
-    right: auto;
-    top: auto;
-    bottom: 9vh;
-    max-width: 80vw;
-  }
+/*
+ * Stacked layout (phones, portrait tablets). FrameRig flips data-stack when the
+ * screen is too narrow to put captions beside the tower: the tower moves up,
+ * the captions sit in a block along the bottom on a dark scrim.
+ */
+.narrative[data-stack="true"]::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 0 0;
+  height: 56vh;
+  background: linear-gradient(
+    to top,
+    rgba(5, 6, 7, 0.92) 0%,
+    rgba(5, 6, 7, 0.78) 48%,
+    rgba(5, 6, 7, 0) 100%
+  );
+  opacity: 0;
+  transition: opacity 0.6s ease;
+  pointer-events: none;
+}
 
+.overlay[data-phase="settled"] .narrative[data-stack="true"]::before {
+  opacity: 1;
+}
+
+.narrative[data-stack="true"] .narrative-home,
+.narrative[data-stack="true"] .narrative-level,
+.narrative[data-stack="true"] .narrative-story {
+  left: 7vw;
+  right: 7vw;
+  top: auto;
+  bottom: 6vh;
+  max-width: none;
+}
+
+.narrative[data-stack="true"] .story-window {
+  --slot: 5.2rem;
+}
+
+.narrative[data-stack="true"] .narrative-hint {
+  margin-top: 1.1rem;
+}
+
+@media (max-width: 779px) {
   .story-window {
-    --slot: 6.4rem;
+    --slot: 5.2rem;
   }
 }
 

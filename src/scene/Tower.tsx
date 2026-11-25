@@ -17,6 +17,8 @@ import { drawCabinetBack, drawCabinetSide } from "./cabinetArt";
 import { advanceScreen, drawScreen, primeScreenImages, screenSrc, screenStatus } from "./screenArt";
 import { attachVhs, staticMix, tickVhs } from "./vhs";
 import { cubePose, SCREEN_LIFT } from "./stackLayout";
+import { frameRefs } from "./frameRefs";
+import { attachCaptionClear } from "./captionClear";
 import { CAMERA_START, CONCRETE, CUBE, TOP_Y, TOWER, sectionBaseY } from "./towerConfig";
 
 const SLOTS = 10;
@@ -128,26 +130,26 @@ function createScreen(): Screen {
   return { canvas, texture, material, brightness: 0.55 };
 }
 
+/** Concrete that fades out behind the captions (see captionClear.ts). */
+function concrete() {
+  const material = new THREE.MeshStandardMaterial({
+    color: CONCRETE,
+    roughness: 0.9,
+    metalness: 0.02,
+    transparent: true,
+    opacity: 0,
+    depthWrite: false,
+  });
+  attachCaptionClear(material);
+  return material;
+}
+
 export function Tower() {
   const build = useMemo(() => buildSection(), []);
   const materials = useMemo(
     () => ({
-      pillar: new THREE.MeshStandardMaterial({
-        color: CONCRETE,
-        roughness: 0.9,
-        metalness: 0.02,
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-      }),
-      frontPier: new THREE.MeshStandardMaterial({
-        color: CONCRETE,
-        roughness: 0.9,
-        metalness: 0.02,
-        transparent: true,
-        opacity: 0,
-        depthWrite: false,
-      }),
+      pillar: concrete(),
+      frontPier: concrete(),
       cabinet: new THREE.MeshStandardMaterial({
         color: "#6e6e6e",
         roughness: 0.72,
@@ -178,6 +180,8 @@ export function Tower() {
   );
   const sides = useMemo(() => Array.from({ length: SLOTS }, () => createMark()), []);
   const backs = useMemo(() => Array.from({ length: SLOTS }, () => createMark()), []);
+  /** The -x face. Drawn mirrored on purpose so the text still reads left to right from outside. */
+  const lefts = useMemo(() => Array.from({ length: SLOTS }, () => createMark()), []);
 
   const spin = useRef<THREE.Group>(null);
   const lean = useRef<THREE.Group>(null);
@@ -196,9 +200,25 @@ export function Tower() {
 
   useEffect(() => {
     primeScreenImages();
-    document.fonts?.ready.then(() => {
+    const fonts = document.fonts;
+    if (!fonts) return;
+    // `ready` can resolve before the page has asked for its faces, so repaint the
+    // canvas text whenever a batch of fonts finishes, not only once.
+    const repaint = () => {
       needsRedraw.current = true;
-    });
+    };
+    fonts.ready.then(repaint);
+    fonts.addEventListener("loadingdone", repaint);
+    return () => fonts.removeEventListener("loadingdone", repaint);
+  }, []);
+
+  useEffect(() => {
+    frameRefs.lean = lean.current;
+    frameRefs.cubes = cubes.current;
+    return () => {
+      frameRefs.lean = null;
+      frameRefs.cubes = [];
+    };
   }, []);
 
   useLayoutEffect(
@@ -216,14 +236,14 @@ export function Tower() {
         screen.texture.dispose();
         screen.material.dispose();
       });
-      for (const mark of [...sides, ...backs]) {
+      for (const mark of [...sides, ...backs, ...lefts]) {
         mark.texture.dispose();
         mark.material.dispose();
       }
       const stuck = sticker.current?.material;
       if (stuck instanceof THREE.MeshBasicMaterial) stuck.map?.dispose();
     },
-    [build, materials, screens, sides, backs],
+    [build, materials, screens, sides, backs, lefts],
   );
 
   const levelInSlot = (slot: number) => slotSection.current[slot];
@@ -281,14 +301,8 @@ export function Tower() {
       spin.current.rotation.y += delta * motion.rotationSpeed * (1 - browse.storyBlend);
     }
     if (lean.current) {
+      // Sideways placement is FrameRig's job now: it measures the screen and shifts the lens.
       lean.current.rotation.z = motion.lean;
-      // Captions sit just right of center, so the cabinet has to park further left.
-      const wide = window.innerWidth >= 780;
-      const hoverShift = wide ? 2.15 : 4.4;
-      const storyPull = wide ? 2.4 : 5;
-      const shift = (hoverShift - storyPull * browse.storyBlend) * browse.zoom;
-      const glide = 1 - Math.exp(-delta * 3.2);
-      lean.current.position.x += (shift - lean.current.position.x) * glide;
     }
 
     const visible = motion.structure;
@@ -299,6 +313,7 @@ export function Tower() {
       materials.edge,
       ...sides.map((mark) => mark.material),
       ...backs.map((mark) => mark.material),
+      ...lefts.map((mark) => mark.material),
     ]) {
       material.opacity = visible;
       material.depthWrite = visible > 0.02;
@@ -352,6 +367,8 @@ export function Tower() {
 
         drawCabinetSide(sides[slot].canvas, section);
         sides[slot].texture.needsUpdate = true;
+        drawCabinetSide(lefts[slot].canvas, section, true);
+        lefts[slot].texture.needsUpdate = true;
         drawCabinetBack(backs[slot].canvas, section);
         backs[slot].texture.needsUpdate = true;
       }
@@ -538,10 +555,9 @@ export function Tower() {
             />
             <mesh
               geometry={build.side}
-              material={sides[slot].material}
+              material={lefts[slot].material}
               position={[-CUBE / 2 - 0.02, 0, 0]}
               rotation={[0, -Math.PI / 2, 0]}
-              scale={[-1, 1, 1]}
             />
             <mesh
               geometry={build.back}

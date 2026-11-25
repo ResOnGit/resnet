@@ -121,7 +121,7 @@ function paintTitle(ctx: CanvasRenderingContext2D, section: number, missing: str
   etchedText(ctx, item.title, 40, h / 2 + 16, titleSize, 700, { face: "#e8e2d8" });
 
   if (missing) {
-    etchedText(ctx, missing, 40, h - 46, 15, 600, {
+    etchedText(ctx, missing, 40, h - 46, 15, 700, {
       face: "rgba(200, 194, 184, 0.55)",
     });
   }

@@ -1,12 +1,30 @@
+import "../ui/fonts";
 import { TOWER, cameraEnd, CAMERA_START } from "../scene/towerConfig";
 import { resetBrowse, setInteractive } from "./browse";
 import { motion, resetMotion } from "./motion";
+
+/**
+ * Intro timeline, in ms of intro time. About 7.5s end to end (it used to be 10.8s),
+ * and any tap, key or scroll fast-forwards the rest. Reduced motion plays it near-instantly.
+ */
+const BLACK_UNTIL = 600;
+const TITLE_END = 2100;
+const LOAD_MIN = 600;
+const RELEASE = 1000;
+const PULL = 4300;
+/** Browsing unlocks a little before the camera lands. */
+const UNLOCK_AT = 0.82;
+const SKIP_RATE = 4;
+const META_ALPHA = 0.8;
 
 let fontsReady = false;
 let sceneReady = false;
 
 if (document.fonts) {
-  document.fonts.ready.then(() => {
+  // `fonts.ready` alone can resolve before the page has requested any face, so ask for them.
+  const wanted = ['700 1em "Trajanus Roman"', "700 1em Cinzel", '500 1em "DM Sans"', '700 1em "DM Sans"'];
+  const asked = Promise.allSettled(wanted.map((face) => document.fonts.load(face)));
+  Promise.all([asked, document.fonts.ready]).then(() => {
     fontsReady = true;
   });
 } else {
@@ -63,60 +81,104 @@ export function startIntro() {
   setOpacity(line1, 0);
   setOpacity(line2, 0);
 
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const spin = reduce ? 0 : 0.075;
   const end = cameraEnd(window.innerWidth < 780);
-  const started = performance.now();
+
+  let rate = reduce ? 8 : 1;
+  let clock = 0;
+  let last = performance.now();
   let phase: "title" | "load" | "release" | "pull" | "done" = "title";
   let loadFrom = 0;
   let releaseFrom = 0;
   let pullFrom = 0;
+  let shown = 0;
+  let unlocked = false;
   let frame = 0;
+
+  const fastForward = () => {
+    rate = SKIP_RATE;
+  };
+  const skipEvents = ["pointerdown", "keydown", "wheel", "touchstart"] as const;
+  skipEvents.forEach((name) => window.addEventListener(name, fastForward, { passive: true }));
+  const unbind = () => skipEvents.forEach((name) => window.removeEventListener(name, fastForward));
+
+  const finish = () => {
+    phase = "done";
+    motion.settle = 1;
+    motion.camX = end.camX;
+    motion.camY = end.camY;
+    motion.camZ = end.camZ;
+    motion.lookX = end.lookX;
+    motion.lookY = end.lookY;
+    motion.lookZ = end.lookZ;
+    motion.upX = end.upX;
+    motion.upY = end.upY;
+    motion.upZ = end.upZ;
+    motion.fov = end.fov;
+    motion.fogNear = end.fogNear;
+    motion.fogFar = end.fogFar;
+    motion.lean = TOWER.lean;
+    motion.rotationSpeed = spin;
+    motion.ringGhost = 0;
+    overlay?.setAttribute("data-phase", "settled");
+    setOpacity(line1, 1);
+    setOpacity(line2, 0.72);
+    setInteractive(true);
+    unbind();
+  };
 
   const tick = () => {
     if (phase === "done") return;
     const now = performance.now();
-    const t = now - started;
+    // The cap only guards against a jump after the tab was hidden. It must stay well above
+    // a slow frame, or a low-fps machine would play the intro in slow motion.
+    const dt = Math.min(now - last, 250) * rate;
+    last = now;
+    clock += dt;
+    const t = clock;
 
     if (phase === "title") {
-      overlay?.setAttribute("data-phase", t < 1100 ? "black" : "title");
-      const flickerOn = (t > 360 && t < 520) || (t > 980 && t < 1140);
+      overlay?.setAttribute("data-phase", t < BLACK_UNTIL ? "black" : "title");
+      const flickerOn = (t > 200 && t < 320) || (t > 520 && t < 640);
       setOpacity(flicker, flickerOn ? 0.05 : 0);
-      setOpacity(word, smooth((t - 900) / 1500));
-      motion.ringGhost = smooth((t - 1200) / 1400);
-      setOpacity(meta, 0.55 * smooth((t - 1800) / 700));
-      if (t >= 2800) {
+      setOpacity(word, smooth((t - 450) / 1200));
+      motion.ringGhost = smooth((t - 700) / 1200);
+      setOpacity(meta, META_ALPHA * smooth((t - 1100) / 600));
+      if (t >= TITLE_END) {
         phase = "load";
-        loadFrom = now;
+        loadFrom = t;
         overlay?.setAttribute("data-phase", "loading");
         setOpacity(word, 1);
         motion.ringGhost = 1;
       }
     } else if (phase === "load") {
-      const elapsed = now - loadFrom;
+      const elapsed = t - loadFrom;
       const ready = fontsReady && sceneReady;
-      const progress = ready
-        ? Math.min(1, elapsed / 900)
-        : Math.min(0.86, elapsed / 5000);
-      motion.progress = progress;
+      // Ease toward the target so the counter never jumps when loading finishes.
+      const target = ready ? 1 : Math.min(0.86, elapsed / 5000);
+      shown += (target - shown) * (1 - Math.exp(-(dt / 1000) * 7));
+      motion.progress = shown;
       motion.ringGhost = 1;
       motion.structure = 0;
-      meta.textContent = String(Math.round(progress * 100)).padStart(3, "0");
-      if (ready && elapsed >= 900) {
+      meta.textContent = String(Math.round(shown * 100)).padStart(3, "0");
+      if (ready && elapsed >= LOAD_MIN && shown > 0.995) {
         phase = "release";
-        releaseFrom = now;
+        releaseFrom = t;
         motion.progress = 1;
         meta.textContent = "100";
       }
     } else if (phase === "release") {
-      const u = Math.min(1, (now - releaseFrom) / 1400);
+      const u = Math.min(1, (t - releaseFrom) / RELEASE);
       const e = smooth(u);
       setOpacity(word, 1 - e);
-      setOpacity(meta, 0.55 * (1 - e));
+      setOpacity(meta, META_ALPHA * (1 - e));
       motion.ringGhost = 1 - e;
       motion.structure = e;
       motion.progress = 1;
       if (u >= 1) {
         phase = "pull";
-        pullFrom = now;
+        pullFrom = t;
         overlay?.setAttribute("data-phase", "reveal");
         setOpacity(word, 0);
         setOpacity(meta, 0);
@@ -124,7 +186,7 @@ export function startIntro() {
         motion.structure = 1;
       }
     } else if (phase === "pull") {
-      const u = Math.min(1, (now - pullFrom) / 5600);
+      const u = Math.min(1, (t - pullFrom) / PULL);
       const e = glide(u);
       motion.camX = lerp(CAMERA_START.camX, end.camX, e);
       motion.camY = lerp(CAMERA_START.camY, end.camY, e);
@@ -139,33 +201,19 @@ export function startIntro() {
       motion.fogNear = lerp(CAMERA_START.fogNear, end.fogNear, e);
       motion.fogFar = lerp(CAMERA_START.fogFar, end.fogFar, e);
       motion.lean = TOWER.lean * e;
-      motion.rotationSpeed = 0.075 * e;
+      motion.rotationSpeed = spin * e;
+      motion.settle = e;
       motion.structure = 1;
       motion.progress = 1;
-      setOpacity(line1, smooth((u - 0.62) / 0.28));
-      setOpacity(line2, 0.72 * smooth((u - 0.72) / 0.28));
-      if (u > 0.72) overlay?.setAttribute("data-phase", "settled");
-      if (u >= 1) {
-        phase = "done";
-        motion.camX = end.camX;
-        motion.camY = end.camY;
-        motion.camZ = end.camZ;
-        motion.lookX = end.lookX;
-        motion.lookY = end.lookY;
-        motion.lookZ = end.lookZ;
-        motion.upX = end.upX;
-        motion.upY = end.upY;
-        motion.upZ = end.upZ;
-        motion.fov = end.fov;
-        motion.fogNear = end.fogNear;
-        motion.fogFar = end.fogFar;
-        motion.lean = TOWER.lean;
-        motion.rotationSpeed = 0.075;
-        motion.ringGhost = 0;
-        overlay?.setAttribute("data-phase", "settled");
-        setOpacity(line1, 1);
-        setOpacity(line2, 0.72);
+      setOpacity(line1, smooth((u - 0.4) / 0.26));
+      setOpacity(line2, 0.72 * smooth((u - 0.52) / 0.26));
+      if (u > 0.68) overlay?.setAttribute("data-phase", "settled");
+      if (!unlocked && u >= UNLOCK_AT) {
+        unlocked = true;
         setInteractive(true);
+      }
+      if (u >= 1) {
+        finish();
         return;
       }
     }
@@ -174,5 +222,8 @@ export function startIntro() {
   };
 
   frame = requestAnimationFrame(tick);
-  return () => cancelAnimationFrame(frame);
+  return () => {
+    cancelAnimationFrame(frame);
+    unbind();
+  };
 }

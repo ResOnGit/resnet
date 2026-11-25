@@ -27,7 +27,11 @@ export function sectionMark(section: number) {
   return cabinetMark(section);
 }
 
-export function drawCabinetSide(canvas: HTMLCanvasElement, section: number) {
+/**
+ * `mirror` is for the -x face. Its plane is not flipped in 3D, so the vent strip
+ * and the text swap sides here instead and the lettering still reads correctly.
+ */
+export function drawCabinetSide(canvas: HTMLCanvasElement, section: number, mirror = false) {
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
   const { width: w, height: h } = canvas;
@@ -35,13 +39,15 @@ export function drawCabinetSide(canvas: HTMLCanvasElement, section: number) {
   screws(ctx, w, h);
 
   ctx.fillStyle = "#2c2c2c";
-  ctx.fillRect(w - 54, 90, 16, h - 180);
+  ctx.fillRect(mirror ? 38 : w - 54, 90, 16, h - 180);
 
   const number = sectionNumber(section);
   if (!number) return;
-  etchedText(ctx, "SECTION", 40, 36, 44, 700, { baseline: "top", face: "#c9c3b8" });
+  const edge = mirror ? w - 40 : 40;
+  const align = mirror ? "right" : "left";
+  etchedText(ctx, "SECTION", edge, 36, 44, 700, { baseline: "top", face: "#c9c3b8", align });
   const numSize = fitRomanWidth(ctx, number, 700, 148, w - 110);
-  etchedText(ctx, number, 40, 96, numSize, 700, { baseline: "top", face: "#ddd8ce" });
+  etchedText(ctx, number, edge, 96, numSize, 700, { baseline: "top", face: "#ddd8ce", align });
 }
 
 export function drawCabinetBack(canvas: HTMLCanvasElement, section: number) {

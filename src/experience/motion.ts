@@ -1,6 +1,8 @@
 import { CAMERA_START } from "../scene/towerConfig";
 
 export const motion = {
+  /** 0 while the loader owns the screen, 1 once the tower is framed for browsing. */
+  settle: 0,
   progress: 0,
   lean: 0,
   rotationSpeed: 0,
@@ -21,6 +23,7 @@ export const motion = {
 };
 
 export function resetMotion() {
+  motion.settle = 0;
   motion.progress = 0;
   motion.lean = 0;
   motion.rotationSpeed = 0;

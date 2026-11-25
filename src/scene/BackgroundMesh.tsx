@@ -11,11 +11,23 @@ const RADIUS = 16;
 const MAX_OFFSET = 1.15;
 
 export function BackgroundMesh() {
-  const mesh = useRef<THREE.Mesh>(null);
+  const mesh = useRef<THREE.LineSegments>(null);
   const { camera, size, gl } = useThree();
 
   const geometry = useMemo(() => {
     const geo = new THREE.PlaneGeometry(WIDTH, HEIGHT, COLS, ROWS);
+    // Draw only the square cell edges. A plain wireframe also draws every triangle's
+    // diagonal, which read as a stray hatch running across the whole background.
+    const stride = COLS + 1;
+    const edges: number[] = [];
+    for (let row = 0; row <= ROWS; row += 1) {
+      for (let col = 0; col <= COLS; col += 1) {
+        const index = row * stride + col;
+        if (col < COLS) edges.push(index, index + 1);
+        if (row < ROWS) edges.push(index, index + stride);
+      }
+    }
+    geo.setIndex(edges);
     geo.userData.rest = geo.attributes.position.array.slice();
     const count = geo.attributes.position.count;
     geo.userData.offset = new Float32Array(count * 3);
@@ -28,7 +40,6 @@ export function BackgroundMesh() {
       new THREE.ShaderMaterial({
         transparent: true,
         depthWrite: false,
-        wireframe: true,
         fog: false,
         uniforms: {},
         vertexShader: `
@@ -169,7 +180,7 @@ export function BackgroundMesh() {
   });
 
   return (
-    <mesh
+    <lineSegments
       ref={mesh}
       geometry={geometry}
       material={material}
